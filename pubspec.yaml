@@ -54,9 +54,6 @@ dependencies:
   # Permissions
   permission_handler: ^11.1.0
 
-  # Gallery Saver
-  image_gallery_saver: ^2.0.3
-
   # UI Components
   cached_network_image: ^3.3.0
   flutter_spinkit: ^5.2.0

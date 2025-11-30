@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../domain/use_cases/capture_image_use_case.dart';
 import '../../domain/use_cases/select_image_use_case.dart';
 import '../../data/repositories/image_repository.dart';
@@ -47,14 +48,19 @@ class _ImageSelectionScreenState extends State<ImageSelectionScreen> {
           _isLoading = false;
         });
       }
-    } on PermissionDeniedException {
+    } on PermissionDeniedException catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage =
-              'Camera permission is required. Please grant camera access in settings.';
+          _errorMessage = e.message;
           _isLoading = false;
         });
-        _showErrorDialog('Permission Denied', _errorMessage!);
+        // Check if permission is permanently denied
+        final isPermanentlyDenied = _errorMessage!.contains('permanently denied');
+        _showErrorDialog(
+          'Permission Denied',
+          _errorMessage!,
+          showSettingsButton: isPermanentlyDenied,
+        );
       }
     } on InvalidImageFormatException catch (e) {
       if (mounted) {
@@ -98,14 +104,19 @@ class _ImageSelectionScreenState extends State<ImageSelectionScreen> {
           _isLoading = false;
         });
       }
-    } on PermissionDeniedException {
+    } on PermissionDeniedException catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage =
-              'Gallery permission is required. Please grant gallery access in settings.';
+          _errorMessage = e.message;
           _isLoading = false;
         });
-        _showErrorDialog('Permission Denied', _errorMessage!);
+        // Check if permission is permanently denied
+        final isPermanentlyDenied = _errorMessage!.contains('permanently denied');
+        _showErrorDialog(
+          'Permission Denied',
+          _errorMessage!,
+          showSettingsButton: isPermanentlyDenied,
+        );
       }
     } on InvalidImageFormatException catch (e) {
       if (mounted) {
@@ -134,16 +145,24 @@ class _ImageSelectionScreenState extends State<ImageSelectionScreen> {
     }
   }
 
-  void _showErrorDialog(String title, String message) {
+  void _showErrorDialog(String title, String message, {bool showSettingsButton = false}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
+          if (showSettingsButton)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(showSettingsButton ? 'Cancel' : 'OK'),
           ),
         ],
       ),

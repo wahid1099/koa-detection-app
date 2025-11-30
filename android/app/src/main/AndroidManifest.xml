@@ -1,4 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet permission - Required for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Permissions for accessing gallery/photos -->
+    <!-- For Android 12 and below -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- For Android 13 and above -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Optional: For writing images (if needed) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <!-- Camera permission (if you want to take photos) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:label="koa_detecion"
         android:name="${applicationName}"

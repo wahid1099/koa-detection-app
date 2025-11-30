@@ -43,11 +43,26 @@ class ClassificationRepositoryImpl implements ClassificationRepository {
       print('📤 Sending request to API...');
 
       // On web, use CORS proxy to avoid CORS issues
-      final requestUrl = kIsWeb
-          ? 'https://corsproxy.io/?${Uri.encodeComponent(apiEndpoint)}'
-          : apiEndpoint;
+      // On mobile, ensure the URL is properly formatted
+      String requestUrl;
+      if (kIsWeb) {
+        requestUrl = 'https://corsproxy.io/?${Uri.encodeComponent(apiEndpoint)}';
+      } else {
+        // For mobile, ensure URL has proper scheme
+        requestUrl = apiEndpoint;
+        if (!requestUrl.startsWith('http://') && !requestUrl.startsWith('https://')) {
+          requestUrl = 'https://$requestUrl';
+        }
+      }
 
       print('🌐 Request URL: $requestUrl');
+      
+      // Validate URL can be parsed
+      try {
+        Uri.parse(requestUrl);
+      } catch (e) {
+        throw ApiException('Invalid API endpoint URL: $requestUrl');
+      }
 
       // Create multipart request (as your backend expects)
       final request = http.MultipartRequest('POST', Uri.parse(requestUrl));
@@ -114,6 +129,17 @@ class ClassificationRepositoryImpl implements ClassificationRepository {
       );
 
       return result;
+    } on SocketException catch (e) {
+      print('❌ Network error: $e');
+      if (e.message.contains('Failed host lookup')) {
+        throw NetworkException(
+          'Cannot connect to the server. Please check:\n'
+          '1. Your internet connection\n'
+          '2. The API endpoint URL in Settings\n'
+          '3. If the server is online and accessible',
+        );
+      }
+      throw NetworkException('Network error: ${e.message}');
     } on NetworkException {
       rethrow;
     } on ApiException {

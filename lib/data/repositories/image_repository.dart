@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Abstract repository for managing image operations
@@ -76,19 +75,66 @@ class ImageRepositoryImpl implements ImageRepository {
     if (Platform.isAndroid) {
       // For Android 13+ (API 33+), use photos permission
       if (await _isAndroid13OrHigher()) {
-        storageStatus = await Permission.photos.request();
+        storageStatus = await Permission.photos.status;
+        
+        // If permission is not granted, request it
+        if (!storageStatus.isGranted) {
+          storageStatus = await Permission.photos.request();
+        }
+        
+        // If still not granted, check if permanently denied
+        if (!storageStatus.isGranted) {
+          if (storageStatus.isPermanentlyDenied) {
+            throw PermissionDeniedException(
+              'Gallery access permission is permanently denied. '
+              'Please enable it in app settings.',
+            );
+          } else {
+            throw PermissionDeniedException('Gallery access permission denied');
+          }
+        }
       } else {
-        storageStatus = await Permission.storage.request();
+        storageStatus = await Permission.storage.status;
+        
+        // If permission is not granted, request it
+        if (!storageStatus.isGranted) {
+          storageStatus = await Permission.storage.request();
+        }
+        
+        // If still not granted, check if permanently denied
+        if (!storageStatus.isGranted) {
+          if (storageStatus.isPermanentlyDenied) {
+            throw PermissionDeniedException(
+              'Storage permission is permanently denied. '
+              'Please enable it in app settings.',
+            );
+          } else {
+            throw PermissionDeniedException('Storage permission denied');
+          }
+        }
       }
     } else if (Platform.isIOS) {
-      storageStatus = await Permission.photos.request();
+      storageStatus = await Permission.photos.status;
+      
+      // If permission is not granted, request it
+      if (!storageStatus.isGranted) {
+        storageStatus = await Permission.photos.request();
+      }
+      
+      // If still not granted, check if permanently denied
+      if (!storageStatus.isGranted) {
+        if (storageStatus.isPermanentlyDenied) {
+          throw PermissionDeniedException(
+            'Photo library access is permanently denied. '
+            'Please enable it in app settings.',
+          );
+        } else {
+          throw PermissionDeniedException('Photo library access denied');
+        }
+      }
     } else {
       // For other platforms, assume permission is granted
       storageStatus = PermissionStatus.granted;
-    }
-
-    if (!storageStatus.isGranted) {
-      throw PermissionDeniedException('Gallery access permission denied');
     }
 
     // Select image from gallery
@@ -102,43 +148,12 @@ class ImageRepositoryImpl implements ImageRepository {
 
   @override
   Future<String> saveToGallery(File image, String filename) async {
-    // On web, saving to gallery means downloading the file
-    if (kIsWeb) {
-      // On web, we can't save to a "gallery" but we can trigger a download
-      // For now, just return the path as web doesn't have a traditional gallery
-      throw ImageSaveException(
-        'Saving to gallery is not supported on web. Use browser download instead.',
-      );
-    }
-
-    // Request storage permission for saving on mobile
-    PermissionStatus storageStatus;
-
-    if (Platform.isAndroid) {
-      // For Android 13+ (API 33+), use photos permission
-      if (await _isAndroid13OrHigher()) {
-        storageStatus = await Permission.photos.request();
-      } else {
-        storageStatus = await Permission.storage.request();
-      }
-    } else if (Platform.isIOS) {
-      storageStatus = await Permission.photos.request();
-    } else {
-      storageStatus = PermissionStatus.granted;
-    }
-
-    if (!storageStatus.isGranted) {
-      throw PermissionDeniedException('Storage permission denied for saving');
-    }
-
-    // Save image to gallery
-    final result = await ImageGallerySaver.saveFile(image.path, name: filename);
-
-    if (result['isSuccess'] == true) {
-      return result['filePath'] ?? image.path;
-    } else {
-      throw ImageSaveException('Failed to save image to gallery');
-    }
+    // Note: image_gallery_saver dependency was removed due to Android namespace issues
+    // This functionality is currently disabled
+    throw ImageSaveException(
+      'Saving to gallery is currently not supported. '
+      'The image_gallery_saver package was removed due to compatibility issues.',
+    );
   }
 
   /// Check if Android version is 13 or higher (API 33+)
